@@ -18,6 +18,8 @@
 
 %define sysconfigfile   %{_sysconfdir}/sysconfig/named
 %define namedchroot     %{_var}/lib/named/
+%define namedconf       %{_sysconfdir}/named.conf
+%define nameddir        %{_sysconfdir}/named.d
 %define zonefilepath    master/%{name}.zone
 %define zonefile        %{namedchroot}/%{zonefilepath}
 %define zoneid          %{name}-zone
@@ -28,7 +30,7 @@
 %endif
 
 Name:           named-ad-blocker
-Version:        1.0.0
+Version:        0.0.1
 Release:        0
 Summary:        Configures named response policy zone to block DNS requests to ad-serving sites
 License:        Apache-2.0
@@ -36,12 +38,14 @@ Group:          Productivity/Networking/DNS
 Source:         %{name}-%{version}.tar.gz
 Url:            https://github.com/archiecobbs/%{name}/
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Requires:       bind >= 9.8
-Requires:       bind-chrootenv
+BuildArch:      noarch
+Recommends:     cron
+Requires(post): bind >= 9.8
+Requires(post): bind-chrootenv
 Requires:       curl
 Requires(post): %fillup_prereq
 Requires:       sed
-Recommends:     cron
+%systemd_requires
 
 %description
 %{name} updates the configuration of named(8) to reject all DNS requests
@@ -55,13 +59,14 @@ download URL.
 
 %build
 
+# Substitute macros
 for FILE in %{name}-update %{name}.conf; do
     sed -r \
-        's/@pkgname@/%{name}/g' \
-        's/@sysconfigfile@/%{sysconfigfile}/g' \
-        's/@zonefile@/%{zonefile}/g' \
-        's/@zonefilepath@/%{zonefilepath}/g' \
-        's/@zoneid@/%{zoneid}/g' \
+      -e 's|@pkgname@|%{name}|g' \
+      -e 's|@sysconfigfile@|%{sysconfigfile}|g' \
+      -e 's|@zonefile@|%{zonefile}|g' \
+      -e 's|@zonefilepath@|%{zonefilepath}|g' \
+      -e 's|@zoneid@|%{zoneid}|g' \
       < "${FILE}.in" > "${FILE}"
 done
 
@@ -72,8 +77,8 @@ install -d %{buildroot}%{_usr}/lib/%{name}
 install %{name}-update %{buildroot}%{_usr}/lib/%{name}/
 
 # named include file
-install -d %{buildroot}%{_sysconfdir}/named.d
-install %{name}.conf %{buildroot}%{_sysconfdir}/named.d/
+install -d %{buildroot}%{nameddir}
+install %{name}.conf %{buildroot}%{nameddir}/
 
 # sysconfig template
 install -d %{buildroot}%{_fillupdir}
@@ -81,7 +86,7 @@ install %{name}.sysconfig %{buildroot}%{_fillupdir}/sysconfig.named-%{name}
 
 # updater cron script
 install -d %{buildroot}%{_sysconfdir}/cron.weekly
-echo '%{_usr}/lib/%{name}/%{name}-update' > %{buildroot}%{_sysconfdir}/cron.weekly/%{name}
+printf '#!/bin/bash\n\nexec %{_usr}/lib/%{name}/%{name}-update' > %{buildroot}%{_sysconfdir}/cron.weekly/%{name}
 
 # docs
 install -d %{buildroot}%{_datadir}/doc/packages/%{name}
@@ -95,8 +100,11 @@ install LICENSE %{buildroot}%{_datadir}/doc/packages/%{name}/
 # Apply patch on install
 if [ "$1" -eq 1 ]; then
 
+    # Create initial placeholder zonefile
+    echo doubleclick.net | %{_usr}/lib/%{name}/%{name}-update -f -
+
     # Patch named.conf
-    sed -i '/^options/a\t# THE FOLLOWING LINE ADDED BY %{name}\n\tresponse-policy { zone "%{zoneid}"; };' %{namedconf}
+    sed -i '/^options/a        # THE FOLLOWING LINE ADDED BY %{name}\n\tresponse-policy { zone "%{zoneid}"; };' %{namedconf}
 
     # Reload named
     if systemctl -q is-active named.service; then
@@ -110,7 +118,7 @@ fi
 if [ "$1" -eq 0 ]; then
 
     # Unpatch named.conf
-    sed -i '/^\t# THE FOLLOWING LINE ADDED BY %{name}$/,+1d' %{namedconf}
+    sed -i '/^[[:space:]]*# THE FOLLOWING LINE ADDED BY %{name}$/,+1d' %{namedconf}
 
     # Reload named
     if systemctl -q is-active named.service; then
@@ -119,10 +127,10 @@ if [ "$1" -eq 0 ]; then
 fi
 
 %files
-%attr(0755,root,root) %{buildroot}%{_usr}/lib/%{name}/%{name}-update
-%attr(0755,root,root) %{_sysconfdir}/named.d/%{name}.conf
+%attr(0755,root,root) %{_usr}/lib/%{name}
+%config %attr(0644,root,root) %{nameddir}/%{name}.conf
 %attr(0755,root,root) %{_sysconfdir}/cron.weekly/%{name}
 %attr(0644,root,root) %{_fillupdir}/sysconfig.named-%{name}
-%doc %{_datadir}/doc/packages/%{name}
+%doc %attr(0644,root,root) %{_datadir}/doc/packages/%{name}
 
 %changelog
