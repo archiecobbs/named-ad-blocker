@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Constants
+NAME="@pkgname@-update"
+DEFAULT_ZONEFILE="@zonefile@"
+SYSCONFIG_FILE="@sysconfigfile@"
+
+# Bail out if there is an error
+set -e
+
+# Load default configuration
+#. "${SYSCONFIG_FILE}"
+
+# Usage message
+usage()
+{
+    echo "Usage: ${NAME} [-C curlflag] [-o zonefile] [-f file] [url]" 1>&2
+    echo "Options:" 1>&2
+    echo "    -C    Pass curlflag to curl(1)" 1>&2
+    echo "    -f    Read names from 'file' (or '-' for standard input) instead of downloading" 1>&2
+    echo "    -o    Specify output zonefile (default ${DEFAULT_ZONEFILE})" 1>&2
+    echo "    -h    Show this help message" 1>&2
+    echo "Default URL is ${DEFAULT_BLACKLIST_URL}"
+}
+
+# Parse command line
+DEFAULT_BLACKLIST_URL="${NAMED_AD_BLOCKER_BLACKLIST_URL}"
+BLACKLIST_URL="${DEFAULT_BLACKLIST_URL}"
+ZONEFILE="${DEFAULT_ZONEFILE}"
+INPUT_FILE=""
+CURL_FLAGS=""
+while [ ${#} -gt 0 ]; do
+    case "$1" in
+        -C)
+            shift
+            CURL_FLAGS="${CURL_FLAGS} ${1}"
+            shift
+            ;;
+        -f)
+            shift
+            INPUT_FILE="${1}"
+            shift
+            ;;
+        -o)
+            shift
+            ZONEFILE="${1}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+case "${#}" in
+    1)
+        if [ -n "${INPUT_FILE}" ]; then
+            usage
+            exit 1
+        fi
+        BLACKLIST_URL="$1"
+        ;;
+    0)
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+NEW_ZONEFILE="${ZONEFILE}.${NAME}.new"
+
+# Create temporary file for file download
+BLACKLIST_FILE=`mktemp -q /tmp/twimsg.XXXXXX`
+if [ $? -ne 0 ]; then
+    echo "${NAME}: can't create temporary file" 1>&2
+    exit 1
+fi
+trap "rm -f ${BLACKLIST_FILE} ${NEW_ZONEFILE}" 0 2 3 5 10 13 15
+
+# Download blacklist file
+if [ -n "${INPUT_FILE}" ]; then
+    cat "${INPUT_FILE}" > "${BLACKLIST_FILE}"
+else
+
+    # Download using curl(1)
+    "${CURL}" --silent --output "${BLACKLIST_FILE}" ${CURL_FLAGS} "${BLACKLIST_URL}"
+
+    # Check result
+    CURL_RESULT="$?"
+    if [ "${CURL_RESULT}" -ne 0 ]; then
+        echo "${NAME}: error downloading blacklist URL (curl returned ${CURL_RESULT})" 1>&2
+        exit 1
+    fi
+fi
+
+# Generate zonefile from domain list
+cat > "${NEW_ZONEFILE}" << 'xxEOFxx'
+;
+; GENERATED FILE - DO NOT EDIT
+;
+; This file is generated as part of the @pkgname@ RPM.
+;
+$TTL 1H
+@                        SOA LOCALHOST. named-mgr.example.com (1 1h 15m 30d 2h)
+                         NS  LOCALHOST.
+xxEOFxx
+cat "${BLACKLIST_FILE}" \
+  | sed -rn 's/[[:space:]]*([^#][^[:space:]]*).*$/\1 \1/gp' \
+  | xargs -n 2 printf '%-24s CNAME   rpz-drop.\n*.%-22s CNAME   rpz-drop.\n' \
+  >> "${NEW_ZONEFILE}"
+
+# Install file into place
+install -m 644 "${NEW_ZONEFILE}" "${ZONEFILE}"

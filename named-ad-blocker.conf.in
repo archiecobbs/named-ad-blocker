@@ -1,0 +1,11 @@
+#
+# This file is generated as part of the @pkgname@ RPM.
+#
+zone "@zoneid@" {
+#   recursive-only no;
+    type master;
+    file "@zonefilepath@";
+    allow-update { none; };
+    allow-transfer { none; };
+    allow-query { localhost; };
+};
