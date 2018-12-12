@@ -5,4 +5,4 @@
 # URL returning a list of domain names to block. Whitespace and lines starting
 # with a "#" character are ignored.
 #
-NAMED_AD_BLOCKER_BLACKLIST_URL='https://pgl.yoyo.org/as/serverlist.php?hostformat=hosts&showintro=0&useip='
+NAMED_AD_BLOCKER_BLACKLIST_URL='https://pgl.yoyo.org/as/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext&useip='

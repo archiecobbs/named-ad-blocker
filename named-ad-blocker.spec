@@ -108,8 +108,11 @@ if [ "$1" -eq 1 ]; then
     # Create initial placeholder zonefile
     echo doubleclick.net | %{_usr}/lib/%{name}/%{name}-update -f -
 
+    # Patch /etc/sysconfig/named
+    sed -ri 's/^(NAMED_CONF_INCLUDE_FILES=["'\''])(.*)$/\1%{name}.conf \2/g' '%{sysconfigfile}'
+
     # Patch named.conf
-    sed -i '/^options/a        # THE FOLLOWING LINE ADDED BY %{name}\n\tresponse-policy { zone "%{zoneid}"; };' %{namedconf}
+    sed -ri '/^options/a        # THE FOLLOWING LINE ADDED BY %{name}\n\tresponse-policy { zone "%{zoneid}"; };' %{namedconf}
 
     # Reload named
     if systemctl -q is-active named.service; then
@@ -123,7 +126,10 @@ fi
 if [ "$1" -eq 0 ]; then
 
     # Unpatch named.conf
-    sed -i '/^[[:space:]]*# THE FOLLOWING LINE ADDED BY %{name}$/,+1d' %{namedconf}
+    sed -ri '/^[[:space:]]*# THE FOLLOWING LINE ADDED BY %{name}$/,+1d' %{namedconf}
+
+    # Unpatch /etc/sysconfig/named
+    sed -ri 's/^(NAMED_CONF_INCLUDE_FILES=.*)%{name}.conf ?(.*)$/\1\2/g' '%{sysconfigfile}'
 
     # Reload named
     if systemctl -q is-active named.service; then
