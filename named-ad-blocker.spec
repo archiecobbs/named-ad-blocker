@@ -30,7 +30,7 @@
 %endif
 
 Name:           named-ad-blocker
-Version:        0.0.2
+Version:        0.0.3
 Release:        0
 Summary:        Configures named response policy zone to block DNS requests to ad-serving sites
 License:        Apache-2.0
