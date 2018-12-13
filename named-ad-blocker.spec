@@ -17,7 +17,7 @@
 #
 
 %define sysconfigfile   %{_sysconfdir}/sysconfig/named
-%define namedchroot     %{_var}/lib/named/
+%define namedchroot     %{_var}/lib/named
 %define namedconf       %{_sysconfdir}/named.conf
 %define nameddir        %{_sysconfdir}/named.d
 %define zonefilepath    master/%{name}.zone
