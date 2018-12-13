@@ -91,7 +91,7 @@ install %{name}.sysconfig %{buildroot}%{_fillupdir}/sysconfig.named-%{name}
 
 # updater cron script
 install -d %{buildroot}%{_sysconfdir}/cron.weekly
-printf '#!/bin/bash\n\nexec %{_usr}/lib/%{name}/%{name}-update' > %{buildroot}%{_sysconfdir}/cron.weekly/%{name}
+printf '#!/bin/bash\n\nexec %{_usr}/lib/%{name}/%{name}-update\n' > %{buildroot}%{_sysconfdir}/cron.weekly/%{name}
 
 # docs
 install -d %{buildroot}%{_datadir}/doc/packages/%{name}
@@ -140,7 +140,7 @@ fi
 %files
 %attr(0755,root,root) %{_usr}/lib/%{name}
 %config %attr(0644,root,root) %{nameddir}/%{name}.conf
-%attr(0755,root,root) %{_sysconfdir}/cron.weekly/%{name}
+%config %attr(0755,root,root) %{_sysconfdir}/cron.weekly/%{name}
 %attr(0644,root,root) %{_fillupdir}/sysconfig.named-%{name}
 %doc %attr(0644,root,root) %{_datadir}/doc/packages/%{name}
 
