@@ -13,3 +13,5 @@ The list of domain names to block is automatically updated regularly on a weekly
 basis, or at any time via `/usr/lib/named-ad-blocker/named-ad-blocker-update`.
 
 The URL for the blacklist is configured in `/etc/sysconfig/named`.
+
+[Link to the openSUSE project](https://build.opensuse.org/package/show/home:archie172/named-ad-blocker).
