@@ -32,7 +32,7 @@
 Name:           named-ad-blocker
 Version:        0.0.3
 Release:        0
-Summary:        Configures named response policy zone to block DNS requests to ad-serving sites
+Summary:        Configures named(8) to block DNS requests for ad-serving websites
 License:        Apache-2.0
 Group:          Productivity/Networking/DNS
 Source:         %{name}-%{version}.tar.gz
@@ -48,16 +48,19 @@ Requires:       sed
 %systemd_requires
 
 %description
-%{name} is an RPM package for openSUSE that configures named(8) to block
-DNS requests to ad-serving sites.
+%{name} configures named(8) to block DNS requests for ad-serving websites.
 
-%{name} updates the configuration of named(8) to reject all DNS requests for
-domains associated with ad-serving websites. This is done using the response
-policy zone support in BIND. By configuring named(8) as the DNS server for
-you network, you can enjoy a more ad-free browsing experience.
+After installation, named(8) will respond with "unknown domain" to any request
+for a domain on a configurable list of domains that are known to primarily serve
+website advertisements. By configuring named(8) as the DNS server for you network,
+you can enjoy a more ad-free web browsing experience.
 
-The list of domain names to block is updated regularly. The URL for the
-blacklist is configured in %{sysconfigfile}.
+%{name} relies on the response policy zone support in named(8).
+
+The list of domain names to block is automatically updated regularly on a weekly
+basis, or at any time via %{_usr}/lib/%{name}/%{name}-update.
+
+The URL for the blacklist is configured in %{sysconfigfile}.
 
 %prep
 %setup -q
