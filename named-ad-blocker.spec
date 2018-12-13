@@ -121,6 +121,9 @@ if [ "$1" -eq 1 ]; then
     if systemctl -q is-active named.service; then
         systemctl reload-or-try-restart named.service
     fi
+
+    # Notify about initializing blacklist
+    echo "Note: you can initialize your DNS blacklist via %{_usr}/lib/%{name}/%{name}-update"
 fi
 
 %preun
