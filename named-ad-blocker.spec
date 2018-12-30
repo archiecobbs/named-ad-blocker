@@ -34,7 +34,7 @@ Version:        0.0.3
 Release:        0
 Summary:        Configures named(8) to block DNS requests for ad-serving websites
 License:        Apache-2.0
-Group:          Productivity/Networking/DNS
+Group:          Productivity/Networking/DNS/Utilities
 Source:         %{name}-%{version}.tar.gz
 Url:            https://github.com/archiecobbs/%{name}/
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
